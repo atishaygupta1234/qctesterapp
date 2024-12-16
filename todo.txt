@@ -1,0 +1,9 @@
+flash tool implement (UI)
+check for range of values 
+append values to excel 
+error handling 
+threading
+clean code
+logic for startover and start (UI)
+search for pcb id
+check before accept/reject
