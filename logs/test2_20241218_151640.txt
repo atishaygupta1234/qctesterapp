@@ -1,0 +1,17 @@
+Date: 2024-12-18
+Time: 15:16:40
+Source: d2:8c:af:f3:c4:43
+PCB ID: test2
+
+2024-12-18 15:16:41 [INFO]: WDT Test Starts...
+2024-12-18 15:16:49 [INFO]: [ExC: Main] WDT: Pass
+2024-12-18 15:16:49 [INFO]: QC Tests Start...
+2024-12-18 15:16:54 [INFO]: [ExC: Main] ESPinfo: 862749051208634,4194304
+2024-12-18 15:16:54 [INFO]: [ExC: Main] RTCInterface: Pass
+2024-12-18 15:17:09 [INFO]: [ExC: Main] PressureTransmitter: 0.987,18.090
+2024-12-18 15:17:09 [INFO]: [ExC: Main] BatteryVoltage: 3.522
+2024-12-18 15:17:09 [INFO]: [ExC: Main] uSD: Pass
+2024-12-18 15:17:09 [INFO]: [ExC: Main] BME: Failed
+2024-12-18 15:17:35 [INFO]: [ExC: Main] GPRSConnection: Failed
+2024-12-18 15:17:48 [INFO]: LPM Pass
+2024-12-18 15:17:48 [ERROR]: Unexpected error: [Errno 9] Bad file descriptor

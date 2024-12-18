@@ -1,0 +1,15 @@
+Date: 2024-12-18
+Time: 15:13:30
+Source: d2:8c:af:f3:c4:43
+PCB ID: test1
+
+2024-12-18 15:13:31 [INFO]: WDT Test Starts...
+2024-12-18 15:13:36 [INFO]: [ExC: Main] WDT: Pass
+2024-12-18 15:13:36 [INFO]: QC Tests Start...
+2024-12-18 15:13:41 [INFO]: [ExC: Main] ESPinfo: 862749051208634,4194304
+2024-12-18 15:13:41 [INFO]: [ExC: Main] RTCInterface: Pass
+2024-12-18 15:13:56 [INFO]: [ExC: Main] PressureTransmitter: 0.988,18.280
+2024-12-18 15:13:56 [INFO]: [ExC: Main] BatteryVoltage: 3.522
+2024-12-18 15:13:56 [INFO]: [ExC: Main] uSD: Pass
+2024-12-18 15:13:56 [INFO]: [ExC: Main] BME: Failed
+2024-12-18 15:16:14 [ERROR]: Unexpected error: [Errno 9] Bad file descriptor

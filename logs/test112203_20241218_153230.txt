@@ -1,0 +1,7 @@
+Date: 2024-12-18
+Time: 15:32:30
+Source: d2:8c:af:f3:c4:43
+PCB ID: test112203
+
+2024-12-18 15:32:43 [ERROR]: Unexpected error: [Errno 9] Bad file descriptor
+2024-12-18 15:32:46 [ERROR]: No active serial connection.

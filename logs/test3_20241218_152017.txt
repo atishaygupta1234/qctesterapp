@@ -1,0 +1,10 @@
+Date: 2024-12-18
+Time: 15:20:17
+Source: d2:8c:af:f3:c4:43
+PCB ID: test3
+
+2024-12-18 15:20:18 [INFO]: WDT Test Starts...
+2024-12-18 15:20:23 [INFO]: [ExC: Main] WDT: Pass
+2024-12-18 15:20:23 [INFO]: QC Tests Start...
+2024-12-18 15:20:28 [INFO]: [ExC: Main] ESPinfo: 862749051208634,4194304
+2024-12-18 15:20:28 [INFO]: [ExC: Main] RTCInterface: Pass

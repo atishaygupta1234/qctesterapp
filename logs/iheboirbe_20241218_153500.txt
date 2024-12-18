@@ -1,0 +1,7 @@
+Date: 2024-12-18
+Time: 15:35:00
+Source: d2:8c:af:f3:c4:43
+PCB ID: iheboirbe
+
+2024-12-18 15:35:02 [ERROR]: Serial exception: read failed: [Errno 9] Bad file descriptor
+2024-12-18 15:35:03 [ERROR]: No active serial connection.

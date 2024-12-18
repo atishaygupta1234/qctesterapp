@@ -52,14 +52,12 @@ def updater():
         info_accept()
         values["espimei"]=values["info"][0]
         values["espsize"]=values["info"][1]
-        values["espmac"]=values["info"][2]
         values["finalinfo"]="PASS"
     else:
         info_reject()
         values["finalinfo"]="FAIL"
         values["espimei"]="--"
         values["espsize"]="--"
-        values["espmac"]="--"
 
     if(values["rtc"]=="PASS"):
         rtc_accept()
@@ -546,6 +544,18 @@ def startover():
         for widget in text_widgets:
             widget.config(text="--", bg="lightgrey")
 
+    # Ensure the serial port is open before trying to flush or close
+        if ser and ser.is_open:
+            try:
+                ser.flush()  # Clear input/output buffers
+                ser.close()  # Close the serial port connection
+                print("Serial port closed successfully.")
+            except Exception as e:
+                output_area.insert(tk.END, f"Error closing serial port: {e}\n")
+                logging.error(f"Error closing serial port: {e}")
+        else:
+            output_area.insert(tk.END, "Serial port was not open.\n")
+
     # Start UI reset in a separate thread to avoid blocking the main thread
     threading.Thread(target=reset_ui, daemon=True).start()
 
@@ -585,7 +595,7 @@ def process_serial_data(data):
             logging.info("WDT Test Starts...")
             wdtflag = True
 
-        elif data.startswith("[ExC Main] QC Firmware") and wdtflag == True:
+        elif data.startswith("[ExC: Main] QC Firmware") and wdtflag == True:
             logging.info("[ExC: Main] WDT: Pass")
             values["wdt"] = "PASS"
             text11.config(text="PASS", bg="lightgrey")
@@ -703,7 +713,7 @@ def handle_lpm_ack():
     global intime, hflag, completeflag
 
     if intime:  # Timer is running
-        if data == "[ExC Main] QC Firmware" and hflag == True:
+        if data == "[ExC: Main] QC Firmware" and hflag == True:
             text91.config(text="Pass", bg="lightgrey")
             logging.info(f"LPM Pass")
             values["hibernate"] = "PASS"
@@ -747,8 +757,23 @@ def start_test():
         threading.Thread(target=update_timer, daemon=True).start()  # Start the timer in a separate thread
 
         running_label.config(bg="lightgreen")
+        stopped_label.config(bg="white")
+        qcdone_label.config(bg="white")
         start_button.config(state=tk.DISABLED)
         stop_button.config(state=tk.NORMAL)
+        text_widgets = [
+            text11, text21, text31, text41, text51, text61, text71, text81, text91,
+            text12, text22, text32, text42, text52, text62, text72, text82, text92
+        ]
+        for widget in text_widgets:
+            widget.config(text="--", bg="lightgrey")
+        text_widgets = [
+            text10, text20, text30, text40, text50, text60, text70, text80, text90,
+            text11, text21, text31, text41, text51, text61, text71, text81, text91,
+            text12, text22, text32, text42, text52, text62, text72, text82, text92
+        ]
+        for widget in text_widgets:
+            widget.config(bg="lightgrey")
 
         # Check if there is an active serial connection
         if not ser or not ser.is_open:
@@ -817,18 +842,6 @@ def stop_test():
 
         # Inform the user that logging has stopped and file is closed
         output_area.insert(tk.END, "Logging stopped and file closed.\n")
-
-        # Ensure the serial port is open before trying to flush or close
-        if ser and ser.is_open:
-            try:
-                ser.flush()  # Clear input/output buffers
-                ser.close()  # Close the serial port connection
-                print("Serial port closed successfully.")
-            except Exception as e:
-                output_area.insert(tk.END, f"Error closing serial port: {e}\n")
-                logging.error(f"Error closing serial port: {e}")
-        else:
-            output_area.insert(tk.END, "Serial port was not open.\n")
             
         # Disable stop button and enable start button
         stop_button.config(state=tk.DISABLED)
@@ -869,7 +882,7 @@ def listen_for_command():
                 output_area.insert(tk.END, f"{line}\n")
                 output_area.see(tk.END)  # Auto-scroll to the end
                 
-                if "[ExC Main] PSUP_ON" in line:
+                if "[ExC: Main] PSUP_ON" in line:
                     output_area.insert(tk.END, "Switch to PCB Supply, remove USB-C and connect the debug cable\n", "bold_large")
                     output_area.see(tk.END)
                     disconnect2()  # Move to disconnect function
@@ -960,7 +973,7 @@ hyphen6 = tk.Label(frame, text="-",bg="lightgrey")
 hyphen6.grid(row=3, column=2, padx=5)
 battery_voltage_max_entry = tk.Entry(frame, width=3)
 battery_voltage_max_entry.grid(row=3, column=3, padx=5)
-battery_voltage_max_entry.insert(0,3.5)
+battery_voltage_max_entry.insert(0,4)
 
 port_var2 = StringVar()
 port_frame2 = tk.Frame(app)

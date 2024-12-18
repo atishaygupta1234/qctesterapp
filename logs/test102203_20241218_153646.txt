@@ -1,0 +1,24 @@
+Date: 2024-12-18
+Time: 15:36:46
+Source: d2:8c:af:f3:c4:43
+PCB ID: test102203
+
+2024-12-18 15:36:48 [INFO]: WDT Test Starts...
+2024-12-18 15:36:51 [INFO]: [ExC: Main] WDT: Pass
+2024-12-18 15:36:51 [INFO]: QC Tests Start...
+2024-12-18 15:36:56 [INFO]: [ExC: Main] ESPinfo: 862749051208634,4194304
+2024-12-18 15:36:56 [INFO]: [ExC: Main] RTCInterface: Pass
+2024-12-18 15:37:11 [INFO]: [ExC: Main] PressureTransmitter: 0.987,17.700
+2024-12-18 15:37:11 [INFO]: [ExC: Main] BatteryVoltage: 3.524
+2024-12-18 15:37:11 [INFO]: [ExC: Main] uSD: Pass
+2024-12-18 15:37:11 [INFO]: [ExC: Main] BME: Failed
+2024-12-18 15:37:37 [INFO]: [ExC: Main] GPRSConnection: Failed
+2024-12-18 15:37:39 [INFO]: LPM Pass
+2024-12-18 15:37:39 [ERROR]: Unexpected error: [Errno 9] Bad file descriptor
+2024-12-18 15:38:50 [INFO]: Logging started: logs/test1123234_20241218_153850.txt
+2024-12-18 15:38:51 [INFO]: WDT Test Starts...
+2024-12-18 15:38:54 [INFO]: [ExC: Main] WDT: Pass
+2024-12-18 15:38:54 [INFO]: QC Tests Start...
+2024-12-18 15:38:59 [INFO]: [ExC: Main] ESPinfo: 862749051208634,4194304
+2024-12-18 15:38:59 [INFO]: [ExC: Main] RTCInterface: Pass
+2024-12-18 15:39:01 [ERROR]: Unexpected error: [Errno 9] Bad file descriptor
