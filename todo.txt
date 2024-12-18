@@ -1,9 +1,4 @@
-flash tool implement (UI)
-check for range of values 
-append values to excel 
-error handling 
-threading
-clean code
-logic for startover and start (UI)
-search for pcb id
-check before accept/reject
+error handling for empty values in range check frame
+integrate flash tool
+run hibernate mode testing twice
+fix ":" in [ExC Main]

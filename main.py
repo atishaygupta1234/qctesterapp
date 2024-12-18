@@ -1,32 +1,44 @@
 import tkinter as tk
-from tkinter import StringVar, ttk,filedialog
+from tkinter import StringVar, ttk
 import serial
 import serial.tools.list_ports
 import threading
 from datetime import datetime
 import logging
-import subprocess
-import sys
 from tkinter import ttk
 import uuid
 from openpyxl import Workbook, load_workbook
 import os
-
+import time
 
 def updater():
     global values
-    pmin=pressure_min_entry.get()
-    pmax=pressure_max_entry.get()
-    tmin=temp_min_entry.get()
-    tmax=temp_max_entry.get()
-    bpmin=bme_pressure_min_entry.get()
-    bpmax=bme_pressure_max_entry.get()
-    btmin=bme_temp_min_entry.get()
-    btmax=bme_temp_max_entry.get()
-    bamin=bme_altitude_min_entry.get()
-    bamax=bme_altitude_max_entry.get()
-    vmin=battery_voltage_min_entry.get()
-    vmax=battery_voltage_max_entry.get()
+    pmin=float(pressure_min_entry.get())
+    values["pmin"]=pmin
+    pmax=float(pressure_max_entry.get())
+    values["pmax"]=pmax
+    tmin=float(temp_min_entry.get())
+    values["tmin"]=tmin
+    tmax=float(temp_max_entry.get())
+    values["tmax"]=tmax
+    bpmin=float(bme_pressure_min_entry.get())
+    values["bpmin"]=bpmin
+    bpmax=float(bme_pressure_max_entry.get())
+    values["bpmax"]=bpmax
+    btmin=float(bme_temp_min_entry.get())
+    values["btmin"]=btmin
+    btmax=float(bme_temp_max_entry.get())
+    values["btmax"]=btmax
+    bamin=float(bme_altitude_min_entry.get())
+    values["bamin"]=bamin
+    bamax=float(bme_altitude_max_entry.get())
+    values["bamax"]=bamax
+    vmin=float(battery_voltage_min_entry.get())
+    values["vmin"]=vmin
+    vmax=float(battery_voltage_max_entry.get())
+    values["vmax"]=vmax
+    totaltime=time_label.cget("text")[7:]
+    values["totaltime"]=totaltime
     print(values)
 
     if(values["wdt"]=="PASS"):
@@ -43,11 +55,11 @@ def updater():
         values["espmac"]=values["info"][2]
         values["finalinfo"]="PASS"
     else:
-        info_reject
+        info_reject()
         values["finalinfo"]="FAIL"
-        values["espimei"]=""
-        values["espsize"]=""
-        values["espmac"]=""
+        values["espimei"]="--"
+        values["espsize"]="--"
+        values["espmac"]="--"
 
     if(values["rtc"]=="PASS"):
         rtc_accept()
@@ -59,60 +71,72 @@ def updater():
 
     if(values["pressure"]=="FAIL"): 
         pressure_reject()
-        values["ppressure"]=""
-        values["ptemp"]=""
+        values["ppressure"]="--"
+        values["ptemp"]="--"
         values["finalpressure"]="FAIL"
     else:
         if(values["pressure"]!="--"):
-            pressure_accept()
-            values["ppressure"]=values["pressure"][0]
-            values["ptemp"]=values["pressure"][1]
-            values["finalpressure"]="PASS"
+            values["ppressure"]=float(values["pressure"][0])
+            values["ptemp"]=float(values["pressure"][1])
+            if((pmin<=values["ppressure"]<=pmax) and (tmin<=values["ptemp"]<=tmax)):
+                values["finalpressure"]="PASS"
+                pressure_accept()
+            else:
+                values["finalpressure"]="FAIL"
+                pressure_reject()
         else:
             pressure_reject()
-            values["ppressure"]=""
-            values["ptemp"]=""
+            values["ppressure"]="--"
+            values["ptemp"]="--"
             values["finalpressure"]="FAIL"
 
     if(values["battery"]=="FAIL"): 
         battery_reject()
         values["finalbattery"]="FAIL"
-        values["voltage"]=""
+        values["voltage"]="--"
     else:
         if(values["battery"]!="--"):
-            battery_accept()
-            values["finalbattery"]="PASS"
-            values["voltage"]=values["battery"][0]
+            values["voltage"]=float(values["battery"][0])
+            if(vmin<=float(values["voltage"])<=vmax): 
+                values["finalbattery"]="PASS"
+                battery_accept()
+            else:
+                battery_reject()
+                values["finalbattery"]="FAIL"
         else:
             battery_reject()
             values["finalbattery"]="FAIL"
-            values["voltage"]=""
+            values["voltage"]="--"
 
     if(values["sd"]=="PASS"):
         sd_accept()
         values["finalsd"]="PASS"
     else:
-        sd_reject
+        sd_reject()
         values["finalsd"]="FAIL"
 
     if(values["bme"]=="FAIL"): 
-        pressure_reject()
-        values["bpressure"]=""
-        values["btemp"]=""
-        values["baltitude"]=""
+        bme_reject()
+        values["bpressure"]="--"
+        values["btemp"]="--"
+        values["baltitude"]="--"
         values["finalbme"]="FAIL"
     else:
         if(values["bme"]!="--"):
-            bme_accept()
-            values["bpressure"]=values["bme"][0]
-            values["btemp"]=values["bme"][1]
-            values["baltitude"]=values["bme"][2]
-            values["finalbme"]="PASS"
+            values["bpressure"]=float(values["bme"][0])
+            values["btemp"]=float(values["bme"][1])
+            values["baltitude"]=float(values["bme"][2])
+            if((bpmin<=values["bpressure"]<=bpmax)and(btmin<=values["btemp"]<=btmax)and(bamin<=values["baltitude"]<=bamax)):
+                values["finalbme"]="PASS"
+                bme_accept()
+            else:
+                values["finalbme"]="FAIL"
+                bme_reject()
         else:
             bme_reject()
-            values["bpressure"]=""
-            values["btemp"]=""
-            values["baltitude"]=""
+            values["bpressure"]="--"
+            values["btemp"]="--"
+            values["baltitude"]="--"
             values["finalbme"]="FAIL"
 
     if(values["net"]=="PASS"):
@@ -221,7 +245,6 @@ def hibernate_reject():
     text91.config(bg="lightcoral")
     text92.config(bg="lightcoral",text="Rejected")
 
-# Function to update the time
 def update_timer():
     global trunning, counter
     while trunning:
@@ -237,20 +260,9 @@ def get_mac_address():
     mac_address = ':'.join(f'{(mac >> i) & 0xff:02x}' for i in range(0, 8 * 6, 8)[::-1])
     return mac_address
 
-#{'wdt': 'PASS', 'info': '862749051208634,8388608,558993728', 
-# 'rtc': 'PASS', 'pressure': '1.012,18.020', 'battery': '3.052', 
-# 'sd': 'PASS', 'bme': '19.760,0.985,342.433', 'net': 'FAIL', 
-# 'hibernate': 'PASS', 'pcbid': 'sdjkbf', 'sourceid': 'd2:8c:af:f3:c4:43', 
-# 'date': '2024-12-16', 'time': '13:41:31', 'finalwdt': 'PASS', 
-# 'espimei': '8', 'espsize': '6', 'espmac': '2', 'finalinfo': 'PASS', 
-# 'finalrtc': 'PASS', 'ppressure': '1', 'ptemp': '.', 'finalpressure': 'PASS',
-#  'finalbattery': 'PASS', 'voltage': '3.052', 'finalsd': 'PASS', 
-# 'bpressure': '', 'btemp': '', 'baltitude': '', 'finalbme': 'FAIL', 
-# 'finalnet': 'FAIL', 'finalhib': 'PASS'}
-
 def passtest():
-    label5.config(state=tk.DISABLED)
-    label4.config(fg="green")
+    fail_label.config(state=tk.DISABLED)
+    pass_label.config(bg="lightgreen")
     file_path = "output.xlsx"
     if os.path.exists(file_path):
         wb = load_workbook(file_path)
@@ -258,17 +270,25 @@ def passtest():
     else:
         wb = Workbook()
         sheet = wb.active
-        sheet.append(["Date", "Time", "Pcb Id","Source Id","ESP32 IMEI","ESP32 SIZE","ESP32 Info Communication","Watch Dog Timer","RTC Communication","Pressure","Temperature","Pressure Sensor Communication","Battery Voltage","Battery Communication","SD Card Communication","Pressure","Temperature","Altitude","BME Sensor Communcation","GPRS Communication","Hibernate Mode Testing","Comments","Final Status"])
-    row_to_insert = [values.get("date"), values.get("time"), values.get("pcbid"),values.get("sourceid"),values.get("espimei"),values.get("espsize"),values.get("finalinfo"),values.get("finalwdt"),values.get("finalrtc"),values.get("ppressure"),values.get("ptemp"),values.get("finalpressure"),values.get("voltage"),values.get("finalbattery"),values.get("finalsd"),values.get("bpressure"),values.get("btemp"),values.get("baltitude"),values.get("finalbme"),values.get("finalnet"),values.get("finalhib"),remark_var.get(),"PASS"]
+        sheet.append(["Date", "Time", "Pcb Id","Source Id","ESP32 IMEI","ESP32 SIZE","ESP32 Info Communication","Watch Dog Timer","RTC Communication","PT - Pressure","PT - Temperature","Pressure Sensor Communication","Battery Voltage","Battery Communication","SD Card Communication","BME - Pressure","BME - Temperature","BME -Altitude","BME Sensor Communcation","GPRS Communication","Hibernate Mode Testing","Comments","Time Taken","Final Status"])
+    values['ffinalinfo'] = "Pass" if text22.cget("text") == "Accepted" else "Fail"
+    values['ffinalbattery'] = "Pass" if text52.cget("text") == "Accepted" else "Fail"
+    values['ffinalbme'] = "Pass" if text72.cget("text") == "Accepted" else "Fail"
+    values["ffinalhib"] = "Pass" if text92.cget("text") == "Accepted" else "Fail"
+    values["ffinalwdt"] = "Pass" if text12.cget("text") == "Accepted" else "Fail"
+    values["ffinalrtc"] = "Pass" if text32.cget("text") == "Accepted" else "Fail"
+    values["ffinalpressure"] = "Pass" if text42.cget("text") == "Accepted" else "Fail"
+    values["ffinalsd"] = "Pass" if text62.cget("text") == "Accepted" else "Fail"
+    values["ffinalnet"] = "Pass" if text82.cget("text") == "Accepted" else "Fail"
+    row_to_insert = [values.get("date"), values.get("time"), values.get("pcbid"),values.get("sourceid"),values.get("espimei"),values.get("espsize"),values.get("ffinalinfo"),values.get("ffinalwdt"),values.get("ffinalrtc"),values.get("ppressure"),values.get("ptemp"),values.get("ffinalpressure"),values.get("voltage"),values.get("ffinalbattery"),values.get("ffinalsd"),values.get("bpressure"),values.get("btemp"),values.get("baltitude"),values.get("ffinalbme"),values.get("ffinalnet"),values.get("ffinalhib"),remark_var.get(),values.get("totaltime"),"PASS"]
     sheet.append(row_to_insert)
     wb.save(file_path)
     output_area.insert(tk.END, f"Data successfully written to {file_path}.\n")
     print(f"Data successfully written to {file_path}.")
-
 
 def failtest():
-    label4.config(state=tk.DISABLED)
-    label5.config(fg="red")
+    pass_label.config(state=tk.DISABLED)
+    fail_label.config(bg="lightcoral")
     file_path = "output.xlsx"
     if os.path.exists(file_path):
         wb = load_workbook(file_path)
@@ -276,18 +296,26 @@ def failtest():
     else:
         wb = Workbook()
         sheet = wb.active
-        sheet.append(["Date", "Time", "Pcb Id","Source Id","ESP32 IMEI","ESP32 SIZE","ESP32 Info Communication","Watch Dog Timer","RTC Communication","Pressure","Temperature","Pressure Sensor Communication","Battery Voltage","Battery Communication","SD Card Communication","Pressure","Temperature","Altitude","BME Sensor Communcation","GPRS Communication","Hibernate Mode Testing","Comments","Final Status"])
-    row_to_insert = [values.get("date"), values.get("time"), values.get("pcbid"),values.get("sourceid"),values.get("espimei"),values.get("espsize"),values.get("finalinfo"),values.get("finalwdt"),values.get("finalrtc"),values.get("ppressure"),values.get("ptemp"),values.get("finalpressure"),values.get("voltage"),values.get("finalbattery"),values.get("finalsd"),values.get("bpressure"),values.get("btemp"),values.get("baltitude"),values.get("finalbme"),values.get("finalnet"),values.get("finalhib"),remark_var.get(),"FAIL"]
+        sheet.append(["Date", "Time", "Pcb Id","Source Id","ESP32 IMEI","ESP32 SIZE","ESP32 Info Communication","Watch Dog Timer","RTC Communication","PT - Pressure","PT - Temperature","Pressure Sensor Communication","Battery Voltage","Battery Communication","SD Card Communication","BME - Pressure","BME - Temperature","BME - Altitude","BME Sensor Communcation","GPRS Communication","Hibernate Mode Testing","Comments","Time Taken","Final Status"])
+    values['ffinalinfo'] = "Pass" if text22.cget("text") == "Accepted" else "Fail"
+    values['ffinalbattery'] = "Pass" if text52.cget("text") == "Accepted" else "Fail"
+    values['ffinalbme'] = "Pass" if text72.cget("text") == "Accepted" else "Fail"
+    values["ffinalhib"] = "Pass" if text92.cget("text") == "Accepted" else "Fail"
+    values["ffinalwdt"] = "Pass" if text12.cget("text") == "Accepted" else "Fail"
+    values["ffinalrtc"] = "Pass" if text32.cget("text") == "Accepted" else "Fail"
+    values["ffinalpressure"] = "Pass" if text42.cget("text") == "Accepted" else "Fail"
+    values["ffinalsd"] = "Pass" if text62.cget("text") == "Accepted" else "Fail"
+    values["ffinalnet"] = "Pass" if text82.cget("text") == "Accepted" else "Fail"
+    row_to_insert = [values.get("date"), values.get("time"), values.get("pcbid"),values.get("sourceid"),values.get("espimei"),values.get("espsize"),values.get("ffinalinfo"),values.get("ffinalwdt"),values.get("ffinalrtc"),values.get("ppressure"),values.get("ptemp"),values.get("ffinalpressure"),values.get("voltage"),values.get("ffinalbattery"),values.get("ffinalsd"),values.get("bpressure"),values.get("btemp"),values.get("baltitude"),values.get("ffinalbme"),values.get("ffinalnet"),values.get("ffinalhib"),remark_var.get(),values.get("totaltime"),"FAIL"]
     sheet.append(row_to_insert)
     wb.save(file_path)
     output_area.insert(tk.END, f"Data successfully written to {file_path}.\n")
     print(f"Data successfully written to {file_path}.")
-
 
 def setup_logging(pcbid):
     global txt_filename
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    txt_filename = f"Finalstatus_{pcbid}_{timestamp}.txt"
+    txt_filename = f"{pcbid}_{timestamp}.txt"
 
     logging.basicConfig(
         filename=txt_filename,
@@ -295,121 +323,27 @@ def setup_logging(pcbid):
         format="%(asctime)s - %(message)s",  # You can adjust the format as needed
     )
 
-def write_flash():
-    if not is_port_running:
-        output_area.insert(tk.END, f"No port connected.\n")
-        return
-
-    file_path = file_var.get()
-    if not (file_path):
-        output_area.insert(tk.END, f"Please provide a file.\n")
-        return
-
-    command = [
-        "python3", get_esptool_path(), '-p', port_var.get(), '-b', '460800', 
-        '--before', 'default_reset', '--after', 'hard_reset', '--chip', 'esp32',
-        'write_flash', '--flash_mode', 'dio', '--flash_size', 'detect', '--flash_freq', '40m',
-        "0x0000", file_path
-    ]
-    run_in_thread(command)
-
-# Function to run a command in a thread
-def run_in_thread(command, on_complete=None):
-    def target():
-        try:
-            output_area.insert(tk.END,f"Running command: {' '.join(command)}")
-            process = subprocess.Popen(
-                command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-            )
-            output_lines = []
-            for line in iter(process.stdout.readline, ""):
-                output_lines.append(line.strip())
-            _, stderr = process.communicate()
-            if stderr:
-                output_area.insert(tk.END,f"Error: {stderr.strip()}")
-            if on_complete:
-                on_complete(output_lines)
-        except Exception as e:
-            output_area.insert(tk.END,f"Exception occurred: {e}")
-
-    threading.Thread(target=target).start()
-
-# Function to erase flash memory
-def erase_flash():
-    if not is_port_running:
-        output_area.insert(tk.END, f"No port connected.\n")
-        return
-    command = ["python3", get_esptool_path(), '--chip', 'esp32', '--port', port_var.get(), 
-               'erase_flash', '--force']
-    run_in_thread(command)
-
-# Function to read flash info
-def read_flash_info():
-    if not is_port_running:
-        output_area.insert(tk.END, f"No port connected.\n")
-        return
-    command = ["python3", get_esptool_path(), '--port', port_var.get(), 'flash_id']
-    run_in_thread(command)
-
-
-def browse_file(file_var):
-    file_path = filedialog.askopenfilename()
-    if file_path:
-        file_var.set(file_path)
-        output_area.insert(tk.END, f"Selected file: {file_path}")
-
 def enable_start_button(*args):
     if (pcbid_var.get() and is_port_running ==True):
         start_button.config(state=tk.NORMAL)
         stop_button.config(state=tk.DISABLED)
 
-# Function to get the path of esptool.py
-def get_esptool_path():
-    # Check if running as a packaged executable with PyInstaller
-    if getattr(sys, 'frozen', False):
-        # If bundled with PyInstaller, use sys._MEIPASS for the temporary folder
-        esptool_directory = os.path.join(sys._MEIPASS, "esptool-master")
-    else:
-        # If running as a normal script, use the directory of the script
-        esptool_directory = os.path.join(os.path.dirname(__file__), "esptool-master")
-    
-    if not os.path.exists(esptool_directory):
-        output_area.insert(tk.END,"esptool directory does not exist")
-        raise FileNotFoundError(f"esptool directory does not exist: {esptool_directory}")
-    
-    return os.path.join(esptool_directory, "esptool.py")
-
-# Function to get available COM ports
 def get_ports():
     return [port.device for port in serial.tools.list_ports.comports()]
 
-def start_timer():
-    global timer_flag
-    timer_flag = False  # Reset the flag at the start of the timer
+def refresh_port1():
+    port_combobox1['values'] = get_ports()
+    if port_combobox1['values']:
+        port_combobox1.current(0)
 
-    def timer_task():
-        global timer_flag
-        # Wait for 1.5 minutes (90 seconds)
-        threading.Event().wait(90)
-        print("hogyaa hu bhai")
-        timer_flag = True  # Set the flag after the timer expires
-
-    # Start the timer in a separate thread
-    threading.Thread(target=timer_task, daemon=True).start()
-    print("Timer started for 1.5 minutes.")
-
-# Function to refresh the port dropdown
-def refresh_ports():
-    port_combobox['values'] = get_ports()
-    if port_combobox['values']:
-        port_combobox.current(0)
+def refresh_port2():
+    port_combobox2['values'] = get_ports()
+    if port_combobox2['values']:
+        port_combobox2.current(0)
 
 def connect():
     global ser, is_port_running
-    port = port_var.get()
-    
-    connect_button.config(state=tk.DISABLED)
-    refresh_button.config(state=tk.DISABLED)
+    port = port_var1.get()
 
     if not port:
         output_area.insert(tk.END, "Please select a COM port.\n")
@@ -426,40 +360,38 @@ def connect():
     except Exception as e:
         output_area.insert(tk.END, f"Failed to connect: {e}\n")
         is_port_running = False
-        connect_button.config(state=tk.NORMAL)
 
 def startover():
-    global is_port_running,ser,datee,timee,values,hflag,switchflag
-    global trunning, counter
+    global is_port_running,ser,datee,timee,values,hflag,completeflag,trunning, counter,ser2,mac,txt_filename,intime,wdtflag,qcflag,data
     trunning = False
+    txt_filename=None 
+    intime=True 
+    qcflag=None 
+    ser2=None 
+    data=None
     counter = 0
     time_label.config(text="Timer: 00:00")
-    ts.config(text="Test Status: --",font=("Poppins", 12, "bold"))
-    if txt_filename:
-        txt_filename.close()
-        output_area.insert(tk.END, "Logging interrupted and saved\n")
-    connect_button.config(state=tk.NORMAL)
-    refresh_button.config(state=tk.NORMAL)
-    label4.config(state=tk.NORMAL)
-    label5.config(state=tk.NORMAL)
-    label4.config(fg="black")
-    label5.config(fg="black")
+    pass_label.config(state=tk.NORMAL)
+    fail_label.config(state=tk.NORMAL)
+    pass_label.config(fg="black")
+    fail_label.config(fg="black")
     is_port_running = False
-    output_area.insert(tk.END, f"Port Disconnected!!\n")
     ser = None
     datee=None
-    hflag=False
+    timee=None
+    hflag=None
     mac=None
     values={"wdt":"--","info":"--","rtc":"--","pressure":"--","battery":"--","sd":"--","bme":"--","net":"--","hibernate":"--"}
-    timee=None
     start_button.config(state=tk.DISABLED)
     stop_button.config(state=tk.DISABLED)
-    open_window_button.config(state=tk.NORMAL)
     pcbid_var.set("")
-    switchflag=True
     remark_var.set("")
-    label1.config(bg="white")
-    label2.config(bg="white")
+    completeflag=False
+    running_label.config(bg="white")
+    qcdone_label.config(bg="white")
+    stopped_label.config(bg="white")
+    pass_label.config(bg="white")
+    fail_label.config(bg="white")
     text10.config(bg="lightgrey")
     text20.config(bg="lightgrey")
     text30.config(bg="lightgrey")
@@ -488,19 +420,14 @@ def startover():
     text82.config(text="--",bg="lightgrey")
     text92.config(text="--",bg="lightgrey")
 
-
 def read_from_serial():
-    global ser, is_port_running,wdtflag,qcflag,hflag,values,switchflag
+    global ser, is_port_running,wdtflag,qcflag,hflag,values,completeflag,data
     while is_port_running:
         try:
             if ser.in_waiting > 0:
                 data = ser.readline().decode('utf-8', errors='ignore').strip()
                 output_area.insert(tk.END, f"{data}\n")
                 output_area.see(tk.END)  # Auto-scroll to the bottom
-                
-                if data == "[ExC Main] PSUP_ON"and switchflag==True:
-                    output_area.insert(tk.END, f"Switch to PCB Supply, remove USB-C and connect the debug cable\n")
-                    switchflag=False
 
                 if data == "[ExC: Main] ESP_WDT_START_ACK":  
                     output_area.insert(tk.END, "Received ESP_WDT_START_ACK.\n")
@@ -531,9 +458,7 @@ def read_from_serial():
 
                 if data.startswith("[ExC: Main] ESPinfo:") and qcflag==True:
                     oldvals=data[21:].strip()
-                    print(type(oldvals))
                     vals= oldvals.split(',')
-                    print(type(vals))
                     values["info"]=vals
                     text21.config(text=f"{oldvals}",bg="lightgrey")
                     logging.info(f"{data}")
@@ -556,9 +481,7 @@ def read_from_serial():
 
                 if data.startswith("[ExC: Main] PressureTransmitter:") and qcflag==True and pfail==False:
                     oldvals=data[33:].strip()
-                    print(type(oldvals))
                     vals= oldvals.split(',')
-                    print(type(vals))
                     text41.config(text=f"{oldvals}",bg="lightgrey")
                     logging.info(f"{data}")
                     values["pressure"]=vals
@@ -566,9 +489,7 @@ def read_from_serial():
 
                 if data.startswith("[ExC: Main] BatteryVoltage:") and qcflag==True:
                     oldvals=data[28:].strip()
-                    print(type(oldvals))
                     vals= oldvals.split(',')
-                    print(type(vals))
                     values["battery"]=vals
                     text51.config(text=f"{oldvals}",bg="lightgrey")
                     logging.info(f"{data}")
@@ -591,9 +512,7 @@ def read_from_serial():
 
                 if data.startswith("[ExC: Main] BME:") and qcflag==True and bfail==False:
                     oldvals=data[17:].strip()
-                    print(type(oldvals))
                     vals= oldvals.split(',')
-                    print(type(vals))
                     values["bme"]=vals
                     text71.config(text=f"{oldvals}",bg="lightgrey")
                     logging.info(f"{data}")
@@ -615,28 +534,49 @@ def read_from_serial():
                     hflag=True
                     ser.write("ESP_LPM_START\n".encode('utf-8')) 
 
-                if data=="[ExC: Main] ESP_LPM_ACK" and hflag==True:
-                    output_area.insert(tk.END, f"lpm acknowledges\n")
-                
-                if data=="[ExC Main] QC Firmware" and hflag==True:
-                    text91.config(text="Pass",bg="lightgrey")
-                    logging.info(f"LPM Pass")
-                    values["hibernate"]="PASS"
-                    hflag=False
-                    stop_test()
-
-                if timer_flag==True:
-                    print("aara to h")
-                    values["hibernate"]="FAIL"
-                    text91.config(text="Fail",bg="lightgrey")
-                    logging.info(f"LPM Pass")
-                    hflag=False
-                    stop_test()
+                if data == "[ExC: Main] ESP_LPM_ACK" and hflag == True:
+                    output_area.insert(tk.END, "LPM acknowledged... starting timer\n")
+                    start_timer()
+                    handle_lpm_ack()  # Start periodic check for QC Firmware
                 
         except Exception as e:
             output_area.insert(tk.END, f"Error reading from serial: {e}\n")
             output_area.see(tk.END)
             break
+
+def handle_lpm_ack():
+    global intime, hflag, completeflag
+
+    if intime:  # Timer is running
+        if data == "[ExC Main] QC Firmware" and hflag == True:
+            text91.config(text="Pass", bg="lightgrey")
+            logging.info(f"LPM Pass")
+            values["hibernate"] = "PASS"
+            hflag = False
+            completeflag = True
+            stop_test()
+        else:
+            # Re-check after 1 second
+            app.after(1000, handle_lpm_ack)
+    else:  # Timer expired
+        output_area.insert(tk.END, "Timer expired. No QC Firmware message received.\n")
+        values["hibernate"]="FAIL"
+        hflag = False
+        completeflag = True
+        stop_test()
+
+def start_timer():
+    global intime
+    print("timer started")
+    def timer_function():
+        time.sleep(120)  # Wait for 2 minutes (120 seconds)
+        global intime
+        intime = False
+        print("Timer finished. intime set to False.")
+    
+    # Start the timer in a separate thread
+    timer_thread = threading.Thread(target=timer_function)
+    timer_thread.start()
 
 def start_test():
     global ser,datee,timee,txt_filename,mac
@@ -644,11 +584,9 @@ def start_test():
     if not trunning:
         trunning = True
         threading.Thread(target=update_timer, daemon=True).start()
-    label1.config(bg="lightgreen")
-    label2.config(bg="white")
+    running_label.config(bg="lightgreen")
     start_button.config(state=tk.DISABLED)
     stop_button.config(state=tk.NORMAL)
-    open_window_button.config(state=tk.DISABLED)
     if not ser or not ser.is_open:
         output_area.insert(tk.END, "No active serial connection. Startover and Connect to a port first.\n")
         return
@@ -656,7 +594,7 @@ def start_test():
     mac= get_mac_address()
     values["pcbid"]=pcb_id
     values["sourceid"]=mac
-    text11.config(text="--",bg="lightgrey")
+    '''text11.config(text="--",bg="lightgrey")
     text21.config(text="--",bg="lightgrey")
     text31.config(text="--",bg="lightgrey")
     text41.config(text="--",bg="lightgrey")
@@ -673,13 +611,10 @@ def start_test():
     text62.config(text="--",bg="lightgrey")
     text72.config(text="--",bg="lightgrey")
     text82.config(text="--",bg="lightgrey")
-    text92.config(text="--",bg="lightgrey")
+    text92.config(text="--",bg="lightgrey")'''
     remark_var.set("")
-
-    txt_filename=None
-
-    datee = datetime.now().strftime("%Y-%m-%d")  # Format date as string
-    timee = datetime.now().strftime("%H:%M:%S")  # Format time as string
+    datee = datetime.now().strftime("%Y-%m-%d") 
+    timee = datetime.now().strftime("%H:%M:%S")  
     values["date"]=datee
     values["time"]=timee
     setup_logging(pcb_id)
@@ -690,57 +625,79 @@ def start_test():
         tfile.write(f"PCB ID: {pcb_id}\n\n")
     output_area.insert(tk.END, f"Log file created: {txt_filename}\n")
 
-    ser.write("ESP_WDT_START\n".encode('utf-8'))  # Send TESTSTART to serial monitor
+    ser.write("ESP_WDT_START\n".encode('utf-8')) 
     output_area.insert(tk.END, "Sent ESP_WDT_START to serial monitor.\n")
 
 def stop_test():
-    global txt_filename
-    global trunning
-    ser.close()
+    global trunning,ser
     updater()
     trunning = False
-    label2.config(bg="lightgreen")
-    label1.config(bg="white")
-    txt_filename=None
+    running_label.config(bg="white")
+    if completeflag==True:
+        print("complete hoke aya hu")
+        qcdone_label.config(bg="lightgreen")
+    else:
+        print("zabardasti agya")
+        stopped_label.config(bg="red")
     output_area.insert(tk.END, "Logging stopped and file closed.\n")
     ser.flush()
+    ser.close()
     stop_button.config(state=tk.DISABLED)
     start_button.config(state=tk.NORMAL)
-    open_window_button.config(state=tk.NORMAL)
 
-def open_new_window():
-    global file_var
-    """Open a new window adjacent to the main window with frameS."""
-    new_window = tk.Toplevel(app)  # Create a new window
-    new_window.title("Flash Tool")  # Set window title
-    new_window.geometry("450x100+{}+{}".format(app.winfo_x() + app.winfo_width(), app.winfo_y()))  # Position adjacent to main windo
+def connect2():
+    global ser2
+    port = port_var2.get()  # Get selected port from Combobox
+    if not port:
+        output_area.insert(tk.END, "No port selected. Please select a port.\n")
+        return
 
-    # File operation widgets in the new window
-    file_var = StringVar()
-    frame1=tk.Frame(new_window)
-    frame1.pack(pady=5)
-    tk.Label(frame1, text="File:").pack(side=tk.LEFT, padx=5)
-    tk.Entry(frame1, textvariable=file_var, width=30).pack(side=tk.LEFT, padx=5)
-    tk.Button(frame1, text="Browse", command=lambda: browse_file(file_var)).pack(side=tk.LEFT, padx=5)
-    frame2=tk.Frame(new_window)
-    frame2.pack(pady=5)
-    writeb=tk.Button(frame2, text="Write Flash", command=write_flash).pack(side=tk.LEFT, padx=5)
-    eraseb=tk.Button(frame2, text="Erase Flash", command=erase_flash).pack(side=tk.LEFT, padx=5)
-    readb=tk.Button(frame2, text="Read Flash Info", command=read_flash_info).pack(side=tk.LEFT, padx=5)
-    
+    try:
+        ser2 = serial.Serial(port, baudrate=115200, timeout=1)
+        output_area.insert(tk.END, f"Connected to {port}. Waiting for command...\n")
+
+        # Start a thread to listen for the specific command
+        threading.Thread(target=listen_for_command, daemon=True).start()
+
+    except Exception as e:
+        output_area.insert(tk.END, f"Failed to connect to {port}. Error: {e}\n")
+
+def listen_for_command():
+    global ser2
+    try:
+        while ser2 and ser2.is_open:
+            line = ser2.readline().decode('utf-8', errors='ignore').strip()
+            if line:  # If any data is received
+                output_area.insert(tk.END, f"{line}\n")
+                output_area.see(tk.END)  # Auto-scroll to the end
+                
+                if "[ExC Main] PSUP_ON" in line:
+                    output_area.insert(tk.END, "Switch to PCB Supply, remove USB-C and connect the debug cable\n")
+                    output_area.see(tk.END)
+                    disconnect2()  # Move to disconnect function
+                    break
+            time.sleep(0.1)  # Avoid high CPU usage
+
+    except Exception as e:
+        output_area.insert(tk.END, f"Error while reading: {e}\n")
+
+def disconnect2():
+    global ser2
+    if ser2 and ser2.is_open:
+        ser2.close()
+        output_area.insert(tk.END, "Disconnected from port.\n")
+    else:
+        output_area.insert(tk.END, "No active connection on Debug Port to disconnect.\n")
+
 #----------------------------------------------------------------------------
 
 app = tk.Tk()
 app.title("Aquasense PCB QC Test Tool")
 app.geometry("760x750")
 
-#----------------------------------------------------------------------------
-
-# Create a frame for the Range section
 frame = tk.Frame(app,bd=3, relief="sunken",bg="lightgrey")
 frame.pack(pady=5)
 
-# Pressure Sensor in one line
 pressure_sensor_label = tk.Label(frame, text="Pressure Sensor - Pressure",bg="lightgrey")
 pressure_sensor_label.grid(row=1, column=0, padx=5, pady=5, sticky="e")
 pressure_min_entry = tk.Entry(frame, width=3)
@@ -763,7 +720,6 @@ temp_max_entry = tk.Entry(frame, width=3)
 temp_max_entry.grid(row=1, column=7, padx=5)
 temp_max_entry.insert(0,25)
 
-# BME Sensor in one line
 bme_sensor_label = tk.Label(frame, text="BME Sensor - Pressure",bg="lightgrey")
 bme_sensor_label.grid(row=2, column=0, padx=5, pady=5, sticky="e")
 bme_pressure_min_entry = tk.Entry(frame, width=3)
@@ -797,7 +753,6 @@ bme_altitude_max_entry = tk.Entry(frame, width=3)
 bme_altitude_max_entry.grid(row=2, column=11, padx=5)
 bme_altitude_max_entry.insert(0,500)
 
-# Battery in one line
 battery_label = tk.Label(frame, text="Battery - Voltage",bg="lightgrey")
 battery_label.grid(row=3, column=0, padx=5, pady=5, sticky="e")
 battery_voltage_min_entry = tk.Entry(frame, width=3)
@@ -809,31 +764,39 @@ battery_voltage_max_entry = tk.Entry(frame, width=3)
 battery_voltage_max_entry.grid(row=3, column=3, padx=5)
 battery_voltage_max_entry.insert(0,3.5)
 
+port_var2 = StringVar()
+port_frame2 = tk.Frame(app)
+port_frame2.pack(pady=5)
+tk.Label(port_frame2, text="Select Debug Port - ",font=("Poppins", 12, "bold")).pack(side=tk.LEFT, padx=5)
+port_combobox2 = ttk.Combobox(port_frame2, textvariable=port_var2, values=get_ports())
+port_combobox2.pack(side=tk.LEFT)
 
-#----------------------------------------------------------------------------
+connect_button2 = tk.Button(port_frame2, text="Connect", command=connect2)
+connect_button2.pack(side=tk.LEFT, padx=5)
 
-port_var = StringVar()
-port_frame = tk.Frame(app)
-port_frame.pack(pady=5)
-tk.Label(port_frame, text="Select Com Port - ",font=("Poppins", 12, "bold")).pack(side=tk.LEFT, padx=5)
-port_combobox = ttk.Combobox(port_frame, textvariable=port_var, values=get_ports())
-port_combobox.pack(side=tk.LEFT)
+disconnect_button= tk.Button(port_frame2, text="Disconnect", command=disconnect2)
+disconnect_button.pack(side=tk.LEFT, padx=5)
 
-connect_button = tk.Button(port_frame, text="Connect", command=connect)
-connect_button.pack(side=tk.LEFT, padx=5)
+refresh_button2 = tk.Button(port_frame2, text="Refresh Ports", command=refresh_port2)
+refresh_button2.pack(side=tk.LEFT, padx=5)
 
-refresh_button = tk.Button(port_frame, text="Refresh Ports", command=refresh_ports)
-refresh_button.pack(side=tk.LEFT, padx=5)
+port_var1 = StringVar()
+port_frame1 = tk.Frame(app)
+port_frame1.pack(pady=5)
+tk.Label(port_frame1, text="Select Debug Port - ",font=("Poppins", 12, "bold")).pack(side=tk.LEFT, padx=5)
+port_combobox1 = ttk.Combobox(port_frame1, textvariable=port_var1, values=get_ports())
+port_combobox1.pack(side=tk.LEFT)
 
-open_window_button = tk.Button(port_frame, text="Open Flash Tool ->", command=open_new_window)
-open_window_button.pack(side=tk.LEFT,pady=10)
+connect_button1 = tk.Button(port_frame1, text="Connect", command=connect)
+connect_button1.pack(side=tk.LEFT, padx=5)
 
-#----------------------------------------------------------------------------
+refresh_button1 = tk.Button(port_frame1, text="Refresh Ports", command=refresh_port1)
+refresh_button1.pack(side=tk.LEFT, padx=5)
 
 frame0=tk.Frame(app)
 pcbid_var = StringVar()
 frame0.pack(pady=5)
-pcbid_var.trace_add("write", enable_start_button)  # Trigger enable button on text change
+pcbid_var.trace_add("write", enable_start_button)  
 tk.Label(frame0, text="PCB ID - ",font=("Poppins", 12, "bold")).pack(side=tk.LEFT)
 tk.Entry(frame0, textvariable=pcbid_var, width=20).pack(side=tk.LEFT, padx=5)
 
@@ -846,36 +809,36 @@ stop_button.pack(side=tk.LEFT, padx=5)
 so_button = tk.Button(frame0, text="Start over",command=startover)
 so_button.pack(side=tk.LEFT, padx=5)
 
-#----------------------------------------------------------------------------
-
 frameS=tk.Frame(app)
 frameS.pack(pady=5)
 
-tr=ts=tk.Label(frameS,text="Running",font=("Poppins", 12, "bold"))
-tr.pack(side=tk.LEFT)
-label1 = tk.Label(frameS, width=2, height=1, relief="solid", bg="white")
-label1.pack(side=tk.LEFT,padx=5)
-tc=ts=tk.Label(frameS,text="QC Done",font=("Poppins", 12, "bold"))
-tc.pack(side=tk.LEFT)
-label2 = tk.Label(frameS, width=2, height=1, relief="solid", bg="white")
-label2.pack(side=tk.LEFT)
+running_text=tk.Label(frameS,text="Running",font=("Poppins", 12, "bold"))
+running_text.pack(side=tk.LEFT)
+running_label = tk.Label(frameS, width=2, height=1, relief="solid", bg="white")
+running_label.pack(side=tk.LEFT,padx=5)
+qcdone_text=tk.Label(frameS,text="QC Done",font=("Poppins", 12, "bold"))
+qcdone_text.pack(side=tk.LEFT)
+qcdone_label = tk.Label(frameS, width=2, height=1, relief="solid", bg="white")
+qcdone_label.pack(side=tk.LEFT)
+stopped_text=tk.Label(frameS,text="Stopped",font=("Poppins", 12, "bold"))
+stopped_text.pack(side=tk.LEFT)
+stopped_label = tk.Label(frameS, width=2, height=1, relief="solid", bg="white")
+stopped_label.pack(side=tk.LEFT)
 time_label = tk.Label(frameS, text="Timer: 00:00", font=("Poppins", 12, "bold"))
 time_label.pack(side=tk.LEFT,padx=5)
 
 frame1 = tk.Frame(app,bd=3, relief="sunken",bg="lightgrey")
 frame1.pack(fill="both",pady=5, padx=10)
 
-#headings
-text00 = tk.Label(frame1, text="Test",font=("Poppins", 14, "bold"),bg="grey",anchor="w")
+text00 = tk.Label(frame1, text="Test",font=("Poppins", 12, "bold"),bg="grey",anchor="w")
 text00.grid(row=0, column=0, sticky="nsew")
-text01 = tk.Label(frame1, text="State",font=("Poppins", 14, "bold"),bg="grey")
+text01 = tk.Label(frame1, text="State",font=("Poppins", 12, "bold"),bg="grey")
 text01.grid(row=0, column=1, sticky="nsew")
-text02 = tk.Label(frame1, text="Accept/Reject",font=("Poppins", 14, "bold"),bg="grey")
+text02 = tk.Label(frame1, text="Accept/Reject",font=("Poppins", 12, "bold"),bg="grey")
 text02.grid(row=0, column=2, sticky="nsew")
-tk.Label(frame1, text="",font=("Poppins", 14, "bold"),bg="grey").grid(row=0, column=3, sticky="nsew")
-tk.Label(frame1, text="",font=("Poppins", 14, "bold"),bg="grey").grid(row=0, column=4, sticky="nsew")
+tk.Label(frame1, text="",font=("Poppins", 12, "bold"),bg="grey").grid(row=0, column=3, sticky="nsew")
+tk.Label(frame1, text="",font=("Poppins", 12, "bold"),bg="grey").grid(row=0, column=4, sticky="nsew")
 
-#Watch Dog Timer
 text10 = tk.Label(frame1, text="Watch Dog Timer",anchor="w",bg="lightgrey")
 text10.grid(row=1, column=0,sticky="nsew")
 text11 = tk.Label(frame1, text="--",bg="lightgrey")
@@ -887,7 +850,6 @@ b13.grid(row=1,column=3)
 b14=tk.Button(frame1,text="Reject",highlightbackground="lightgrey",command=wdt_reject)
 b14.grid(row=1,column=4)
 
-#ESP32 Flash Info
 text20 = tk.Label(frame1, text="ESP32 Flash Info",anchor="w",bg="lightgrey")
 text20.grid(row=2, column=0,sticky="nsew")
 text21 = tk.Label(frame1, text="--",bg="lightgrey")
@@ -899,7 +861,6 @@ b23.grid(row=2,column=3)
 b24=tk.Button(frame1,text="Reject",highlightbackground="lightgrey",command=info_reject)
 b24.grid(row=2,column=4)
 
-#RTC Communication
 text30 = tk.Label(frame1, text="RTC Communication",anchor="w",bg="lightgrey")
 text30.grid(row=3, column=0,sticky="nsew")
 text31 = tk.Label(frame1, text="--",bg="lightgrey")
@@ -911,7 +872,6 @@ b33.grid(row=3,column=3)
 b34=tk.Button(frame1,text="Reject",highlightbackground="lightgrey",command=rtc_reject)
 b34.grid(row=3,column=4)
 
-#Pressure Sensor Communication
 text40 = tk.Label(frame1, text="Pressure Sensor Communication",anchor="w",bg="lightgrey")
 text40.grid(row=4, column=0,sticky="nsew")
 text41 = tk.Label(frame1, text="--",bg="lightgrey")
@@ -923,7 +883,6 @@ b43.grid(row=4,column=3)
 b44=tk.Button(frame1,text="Reject",highlightbackground="lightgrey",command=pressure_reject)
 b44.grid(row=4,column=4)
 
-#Battery Voltage
 text50 = tk.Label(frame1, text="Battery Voltage",anchor="w",bg="lightgrey")
 text50.grid(row=5, column=0,sticky="nsew")
 text51 = tk.Label(frame1, text="--",bg="lightgrey")
@@ -935,7 +894,6 @@ b53.grid(row=5,column=3)
 b54=tk.Button(frame1,text="Reject",highlightbackground="lightgrey",command=battery_reject)
 b54.grid(row=5,column=4)
 
-#SD Card Read+Write
 text60 = tk.Label(frame1, text="SD Card Read+Write",anchor="w",bg="lightgrey")
 text60.grid(row=6, column=0,sticky="nsew")
 text61 = tk.Label(frame1, text="--",bg="lightgrey")
@@ -947,7 +905,6 @@ b63.grid(row=6,column=3)
 b64=tk.Button(frame1,text="Reject",highlightbackground="lightgrey",command=sd_reject)
 b64.grid(row=6,column=4)
 
-#BME Sensor Communication
 text70 = tk.Label(frame1, text="BME Sensor Communication",anchor="w",bg="lightgrey")
 text70.grid(row=7, column=0,sticky="nsew")
 text71 = tk.Label(frame1, text="--",bg="lightgrey")
@@ -959,7 +916,6 @@ b73.grid(row=7,column=3)
 b74=tk.Button(frame1,text="Reject",highlightbackground="lightgrey",command=bme_reject)
 b74.grid(row=7,column=4)
 
-#Network Connection
 text80 = tk.Label(frame1, text="GPRS Communication",anchor="w",bg="lightgrey")
 text80.grid(row=8, column=0,sticky="nsew")
 text81 = tk.Label(frame1, text="--",bg="lightgrey")
@@ -971,7 +927,6 @@ b83.grid(row=8,column=3)
 b84=tk.Button(frame1,text="Reject",highlightbackground="lightgrey",command=net_reject)
 b84.grid(row=8,column=4)
 
-#hibernate
 text90 = tk.Label(frame1, text="Hibernate Mode Testing",anchor="w",bg="lightgrey")
 text90.grid(row=9, column=0,sticky="nsew")
 text91 = tk.Label(frame1, text="--",bg="lightgrey")
@@ -988,45 +943,44 @@ frame1.grid_columnconfigure(1, weight=1)
 frame1.grid_columnconfigure(2, weight=1)  
 frame1.grid_columnconfigure(3, weight=1) 
 
-#----------------------------------------------------------------------------
-
 remark_var = StringVar()
 remark_frame = tk.Frame(app)
 remark_frame.pack(pady=5)
 tk.Label(remark_frame, text="Remark - ",font=("Poppins", 12, "bold")).pack(side=tk.LEFT)
 tk.Entry(remark_frame, textvariable=remark_var, width=30).pack(side=tk.LEFT, padx=5)
 
-#----------------------------------------------------------------------------
-
 label_frame = tk.Frame(app)
 label_frame.pack(padx=10, pady=5)
-label4 = tk.Button(
-    label_frame, text="Pass",bg="lightblue",command=passtest,height=3,width=20)
-label4.pack(side=tk.LEFT,pady=5)
-label5 = tk.Button(
-    label_frame, text="Fail",command=failtest,height=3,width=20)
-label5.pack(side=tk.LEFT,pady=5)
-#----------------------------------------------------------------------------
+pass_label = tk.Button(
+label_frame, text="Pass",bg="white",command=passtest,height=3,width=20)
+pass_label.pack(side=tk.LEFT,pady=5)
+fail_label = tk.Button(
+    label_frame, text="Fail",bg="white",command=failtest,height=3,width=20)
+fail_label.pack(side=tk.LEFT,pady=5)
+
 output_area = tk.Text(app, height=7, width=100, state=tk.NORMAL)
 output_area.pack()
-values={"wdt":"--","info":"--","rtc":"--","pressure":"--","battery":"--","sd":"--","bme":"--","net":"--","hibernate":"--"}
-ser = None
-is_port_running = False
-hflag=None
-txt_filename=None
-datee=None
-switchflag=True
-timer_flag = False
-timee=None
-wdtflag=False
-qcflag=None
-file_var=None
-trunning = False
-counter = 0  
-mac=None
 
-refresh_ports()
+#----------------------------------------------------------------------------
+
+values={"wdt":"--","info":"--","rtc":"--","pressure":"--","battery":"--","sd":"--","bme":"--","net":"--","hibernate":"--"}
+ser = None #connect,start,stop,readfromserial,startover
+is_port_running = False #enablestartbutton,connect,startover,readfromserial
+hflag=None #readfromserial,startover
+txt_filename=None #setuplogging,start
+datee=None #stat,startover
+completeflag=False #startover,readfromserial,stop
+timee=None #start,startover
+intime=True #readfromserial,starttimer
+wdtflag=False #readfromserial
+qcflag=None #readfromserial
+trunning = False #updatetimer,starttest
+counter = 0  #updatetimer,startover
+mac=None #starttest
+ser2=None #connect2,disconnect2,listen_for_command
+data=None
+
+refresh_port1()
+refresh_port2()
 
 app.mainloop()
-
-
